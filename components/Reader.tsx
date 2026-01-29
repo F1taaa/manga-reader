@@ -1,11 +1,11 @@
 'use client';
 
-import React from "react"
-
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
+import { getChapterPageUrl } from '@/lib/mangadex';
+import { cn } from '@/lib/utils';
 
 interface ReaderProps {
   pages: string[];
@@ -25,15 +25,13 @@ export function Reader({
   const [page, setPage] = useState(currentPage);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const readerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const pageUrl = `${baseUrl}/data/${hash}/${pages[page]}`;
+  const pageUrl = getChapterPageUrl(baseUrl, hash, pages[page]);
 
   useEffect(() => {
-    if (onPageChange) {
-      onPageChange(page);
-    }
+    onPageChange?.(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page, onPageChange]);
 
   const goToPrevious = () => {
@@ -50,105 +48,116 @@ export function Reader({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowLeft') goToPrevious();
-    if (e.key === 'ArrowRight') goToNext();
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.touches[0].clientX);
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart) return;
-    const touchEnd = e.changedTouches[0].clientX;
-    const diff = touchStart - touchEnd;
-
-    // Swipe left = next page, swipe right = previous page
-    if (diff > 50) {
-      goToNext();
-    } else if (diff < -50) {
-      goToPrevious();
-    }
-    setTouchStart(null);
-  };
-
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') goToPrevious();
+      if (e.key === 'ArrowRight') goToNext();
+      if (e.key === 'f') toggleFullscreen();
+    };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [page, pages.length]);
 
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      containerRef.current?.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
   return (
     <div
-      className={`flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'bg-background'}`}
+      ref={containerRef}
+      className="flex flex-col flex-1 bg-black select-none"
     >
-      {/* Controls */}
-      <div className="flex items-center justify-between border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3">
-        <div className="text-sm font-medium text-muted-foreground">
-          Page {page + 1} of {pages.length}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="gap-2"
-          >
-            {isFullscreen ? 'Exit' : 'Fullscreen'}
-          </Button>
-        </div>
-      </div>
-
-      {/* Image Container */}
-      <div
-        ref={readerRef}
-        className={`flex-1 flex items-center justify-center overflow-hidden ${isFullscreen ? 'bg-black' : 'bg-muted'}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="relative w-full h-full">
-          <Image
-            src={pageUrl || "/placeholder.svg"}
-            alt={`Page ${page + 1}`}
-            fill
-            className="object-contain select-none"
-            onLoadingComplete={() => setLoading(false)}
-            priority
+      {/* Reader Area */}
+      <div className="relative flex-1 flex flex-col items-center justify-start min-h-[calc(100vh-64px)]">
+        {/* Click zones for navigation */}
+        <div className="absolute inset-0 z-10 flex">
+          <div
+            className="w-1/3 h-full cursor-west-resize"
+            onClick={goToPrevious}
+            title="Previous Page (Left Arrow)"
           />
+          <div
+            className="w-1/3 h-full cursor-zoom-in"
+            onClick={toggleFullscreen}
+          />
+          <div
+            className="w-1/3 h-full cursor-east-resize"
+            onClick={goToNext}
+            title="Next Page (Right Arrow)"
+          />
+        </div>
+
+        {/* The Image */}
+        <div className="relative w-full max-w-4xl flex-1 flex flex-col items-center">
+          <img
+            src={pageUrl}
+            alt={`Page ${page + 1}`}
+            className={cn(
+              "w-full h-auto object-contain transition-opacity duration-300",
+              loading ? "opacity-0" : "opacity-100"
+            )}
+            onLoad={() => setLoading(false)}
+          />
+
           {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-muted-foreground border-t-primary" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-white/20 border-t-white" />
             </div>
           )}
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex items-center justify-between border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-4">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={goToPrevious}
-          disabled={page === 0}
-          className="gap-2 bg-transparent"
-        >
-          <ChevronLeft className="h-5 w-5" />
-          Previous
-        </Button>
+      {/* Persistent Bottom Controls */}
+      <div className="sticky bottom-0 z-20 flex flex-col items-center gap-4 bg-black/90 p-6 backdrop-blur-md">
+        <div className="flex items-center gap-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToPrevious}
+            disabled={page === 0}
+            className="h-12 w-12 rounded-full text-white hover:bg-white/10"
+          >
+            <ChevronLeft className="h-8 w-8" />
+          </Button>
 
-        <div className="text-sm font-medium">
-          {page + 1} / {pages.length}
+          <div className="flex flex-col items-center">
+            <span className="text-sm font-bold text-white">
+              {page + 1} / {pages.length}
+            </span>
+            <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full bg-white transition-all duration-300"
+                style={{ width: `${((page + 1) / pages.length) * 100}%` }}
+              />
+            </div>
+          </div>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={goToNext}
+            disabled={page === pages.length - 1}
+            className="h-12 w-12 rounded-full text-white hover:bg-white/10"
+          >
+            <ChevronRight className="h-8 w-8" />
+          </Button>
         </div>
 
         <Button
-          variant="outline"
-          size="lg"
-          onClick={goToNext}
-          disabled={page === pages.length - 1}
-          className="gap-2 bg-transparent"
+          variant="ghost"
+          size="sm"
+          onClick={toggleFullscreen}
+          className="text-xs text-gray-500 hover:text-white transition-colors"
         >
-          Next
-          <ChevronRight className="h-5 w-5" />
+          {isFullscreen ? <Minimize2 className="mr-2 h-4 w-4" /> : <Maximize2 className="mr-2 h-4 w-4" />}
+          {isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'} (F)
         </Button>
       </div>
     </div>
