@@ -109,7 +109,7 @@ export async function getMangaById(id: string): Promise<MangaResponse> {
  */
 export async function getMangaChapters(
   mangaId: string,
-  limit: number = 50,
+  limit: number = 100,
   offset: number = 0,
   translatedLanguage: string = 'en'
 ): Promise<ChapterList> {

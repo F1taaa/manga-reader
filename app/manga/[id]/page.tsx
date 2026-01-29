@@ -46,7 +46,22 @@ export default async function MangaPage({ params }: MangaPageProps) {
     }
 
     const manga = mangaResponse.data;
-    const chapters = chaptersResponse.result === 'ok' ? chaptersResponse.data : [];
+    const allChapters = chaptersResponse.result === 'ok' ? chaptersResponse.data : [];
+
+    // Filter and deduplicate
+    const chapters = deduplicateChapters(allChapters);
+
+    // Find the first chapter (lowest number) that has pages
+    const firstChapter = [...chapters]
+      .filter(ch => (ch.attributes.pages || 0) > 0)
+      .sort((a, b) => {
+        const numA = parseFloat(a.attributes.chapter || '0');
+        const numB = parseFloat(b.attributes.chapter || '0');
+        return numA - numB;
+      })[0];
+
+    const description = getLocalizedString(manga.attributes.description);
+    const tags = manga.attributes.tags ?? [];
 
     // Find the first chapter (lowest number) that is NOT external
     const firstChapter = [...chapters]

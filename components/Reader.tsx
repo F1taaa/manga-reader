@@ -8,27 +8,37 @@ import { getChapterPageUrl } from '@/lib/mangadex';
 import { cn } from '@/lib/utils';
 
 interface ReaderProps {
+  mangaId: string;
+  mangaTitle: string;
+  chapterId: string;
+  chapterNumber: string;
+  volumeNumber: string | null;
   pages: string[];
   baseUrl: string;
   hash: string;
-  currentPage?: number;
-  onPageChange?: (page: number) => void;
+  nextChapterId?: string;
+  prevChapterId?: string;
 }
 
 export function Reader({
+  mangaId,
+  mangaTitle,
+  chapterId,
+  chapterNumber,
+  volumeNumber,
   pages,
   baseUrl,
   hash,
-  currentPage = 0,
-  onPageChange,
+  nextChapterId,
+  prevChapterId,
 }: ReaderProps) {
-  const [page, setPage] = useState(currentPage);
-  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const pageUrl = getChapterPageUrl(baseUrl, hash, pages[page]);
 
+  // Load last page if returning to this chapter
   useEffect(() => {
     onPageChange?.(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -37,14 +47,18 @@ export function Reader({
   const goToPrevious = () => {
     if (page > 0) {
       setPage(page - 1);
-      setLoading(true);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (prevChapterId) {
+      router.push(`/manga/${mangaId}/chapter/${prevChapterId}`);
     }
   };
 
   const goToNext = () => {
     if (page < pages.length - 1) {
       setPage(page + 1);
-      setLoading(true);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } else if (nextChapterId) {
+      router.push(`/manga/${mangaId}/chapter/${nextChapterId}`);
     }
   };
 
