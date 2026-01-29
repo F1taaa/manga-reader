@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Manga } from '@/lib/types';
-import { getCoverImageUrl } from '@/lib/mangadex';
+import { getCoverImageUrl, getLocalizedString, getRelationship } from '@/lib/mangadex';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Calendar } from 'lucide-react';
@@ -12,33 +12,20 @@ interface MangaDetailProps {
   manga: Manga;
 }
 
-// Handles both string and localized object
-function getLocalizedString(
-  value: string | Record<string, string> | undefined,
-  fallback = 'en'
-): string {
-  if (!value) return 'Unknown';
-  if (typeof value === 'string') return value;
-  return value[fallback] || Object.values(value)[0] || 'Unknown';
-}
-
 export function MangaDetail({ manga }: MangaDetailProps) {
-  const coverArt = manga.relationships.find((r) => r.type === 'cover_art');
-  const author = manga.relationships.find((r) => r.type === 'author');
-  const artist = manga.relationships.find((r) => r.type === 'artist');
+  const coverArt = getRelationship(manga, 'cover_art');
+  const author = getRelationship(manga, 'author');
+  const artist = getRelationship(manga, 'artist');
 
   const coverFileName = coverArt?.attributes?.fileName;
   const coverUrl = coverFileName
-    ? getCoverImageUrl(coverFileName, 'medium')
+    ? getCoverImageUrl(manga.id, coverFileName, 'medium')
     : '/placeholder.svg?height=400&width=300';
 
   const title = getLocalizedString(manga.attributes.title);
   const description = getLocalizedString(manga.attributes.description);
 
-  const lastChapter =
-    typeof manga.attributes.lastChapter === 'string'
-      ? manga.attributes.lastChapter
-      : 'N/A';
+  const lastChapter = manga.attributes.lastChapter || 'N/A';
 
   const altTitles = manga.attributes.altTitles ?? [];
   const tags = manga.attributes.tags ?? [];

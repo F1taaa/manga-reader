@@ -1,98 +1,104 @@
-export interface MangaAttribute {
-  title?: string;
-  altTitles?: Record<string, string>[];
-  description?: string;
-  isLocked?: boolean;
-  links?: Record<string, string>;
-  originalLanguage?: string;
-  lastVolume?: string;
-  lastChapter?: string;
-  publicationDemographic?: string;
-  status?: "ongoing" | "completed" | "hiatus" | "cancelled";
-  year?: number;
-  contentRating?: "safe" | "suggestive" | "erotica" | "pornographic";
-  tags?: {
-    id: string;
-    attributes: {
-      name: Record<string, string>;
-    };
-  }[];
-  state?: string;
-  chapterNumbersResetOnNewVolume?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  version?: number;
-  availableTranslatedLanguages?: string[];
-  latestUploadedChapter?: string;
+export type LocalizedString = Record<string, string>;
+
+export type RelationshipType =
+  | "manga"
+  | "chapter"
+  | "cover_art"
+  | "author"
+  | "artist"
+  | "scanlation_group"
+  | "tag"
+  | "user"
+  | "custom_list";
+
+export interface Relationship {
+  id: string;
+  type: RelationshipType;
+  related?: string;
+  attributes?: Record<string, any>;
 }
 
-export interface MangaRelationship {
+export interface Tag {
   id: string;
-  type: "author" | "artist" | "cover_art" | "manga";
-  attributes?: Record<string, any>;
-  related?: string;
-  relatedManga?: string;
+  type: "tag";
+  attributes: {
+    name: LocalizedString;
+    description: LocalizedString;
+    group: string;
+    version: number;
+  };
+}
+
+export interface MangaAttributes {
+  title: LocalizedString;
+  altTitles: LocalizedString[];
+  description: LocalizedString;
+  isLocked: boolean;
+  links: Record<string, string>;
+  originalLanguage: string;
+  lastVolume: string | null;
+  lastChapter: string | null;
+  publicationDemographic: "shounen" | "shoujo" | "josei" | "seinen" | null;
+  status: "ongoing" | "completed" | "hiatus" | "cancelled";
+  year: number | null;
+  contentRating: "safe" | "suggestive" | "erotica" | "pornographic";
+  tags: Tag[];
+  state: "draft" | "submitted" | "published" | "rejected";
+  chapterNumbersResetOnNewVolume: boolean;
+  createdAt: string;
+  updatedAt: string;
+  version: number;
+  availableTranslatedLanguages: string[];
+  latestUploadedChapter: string;
 }
 
 export interface Manga {
   id: string;
-  type: string;
-  attributes: MangaAttribute;
-  relationships: MangaRelationship[];
+  type: "manga";
+  attributes: MangaAttributes;
+  relationships: Relationship[];
 }
 
 export interface MangaResponse {
   result: "ok" | "error";
-  data?: Manga;
-  response?: string;
+  response: string;
+  data: Manga;
 }
 
 export interface MangaList {
   result: "ok" | "error";
+  response: string;
   data: Manga[];
   limit: number;
   offset: number;
   total: number;
-  response?: string;
 }
 
-export interface CoverAttribute {
-  volume?: string;
-  fileName: string;
-  description?: string;
+export interface ChapterAttributes {
+  title: string | null;
+  volume: string | null;
+  chapter: string | null;
+  pages: number;
+  translatedLanguage: string;
+  uploader: string;
+  externalUrl: string | null;
   version: number;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface CoverArt {
-  id: string;
-  type: string;
-  attributes: CoverAttribute;
-  relationships: MangaRelationship[];
+  publishAt: string;
+  readableAt: string;
 }
 
 export interface Chapter {
   id: string;
-  type: string;
-  attributes: {
-    title?: string;
-    chapter?: string;
-    pages: number;
-    translatedLanguage: string;
-    uploader?: string;
-    externalUrl?: string;
-    version: number;
-    createdAt: string;
-    updatedAt: string;
-    publishAt: string;
-    readableAt: string;
-  };
-  relationships: MangaRelationship[];
+  type: "chapter";
+  attributes: ChapterAttributes;
+  relationships: Relationship[];
 }
 
 export interface ChapterList {
   result: "ok" | "error";
+  response: string;
   data: Chapter[];
   limit: number;
   offset: number;
@@ -118,5 +124,37 @@ export interface SearchParams {
   excludedTags?: string[];
   contentRating?: string[];
   order?: Record<string, "asc" | "desc">;
-  includes?: string[];
+  includes?: RelationshipType[];
+}
+
+export type ReadingStatus = "reading" | "completed" | "on_hold" | "dropped" | "plan_to_read";
+
+export interface LibraryItem {
+  mangaId: string;
+  mangaTitle: string;
+  coverArt: string;
+  status: ReadingStatus;
+  addedAt: string;
+  lastReadAt?: string;
+  lastChapterRead?: string;
+  totalChapters?: number;
+}
+
+export interface HistoryItem {
+  mangaId: string;
+  mangaTitle: string;
+  chapterId: string;
+  chapterNumber: string;
+  volumeNumber: string | null;
+  pageNumber: number;
+  timestamp: string;
+}
+
+export interface UserData {
+  library: Record<string, LibraryItem>;
+  history: HistoryItem[];
+  user: {
+    username: string;
+    email: string;
+  } | null;
 }
