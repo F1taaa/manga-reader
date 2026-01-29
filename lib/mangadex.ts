@@ -154,7 +154,7 @@ export function getChapterPageUrl(baseUrl: string, hash: string, fileName: strin
 /**
  * Get popular manga (shortcut)
  */
-export async function getPopularManga(): Promise<MangaList> {
+export async function getPopularManga(p0: number): Promise<MangaList> {
   return searchManga({
     limit: 20,
     offset: 0,
@@ -166,7 +166,7 @@ export async function getPopularManga(): Promise<MangaList> {
 /**
  * Get latest manga updates (shortcut)
  */
-export async function getLatestManga(): Promise<MangaList> {
+export async function getLatestManga(p0: number): Promise<MangaList> {
   return searchManga({
     limit: 20,
     offset: 0,

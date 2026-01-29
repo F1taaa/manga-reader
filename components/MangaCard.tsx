@@ -34,7 +34,7 @@ export function MangaCard({ manga }: MangaCardProps) {
       data-testid="manga-card"
     >
       <Link href={`/manga/${manga.id}`} className="group block h-full">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:shadow-primary/10 group-hover:-translate-y-1">
+        <div className="relative aspect-3/4 overflow-hidden rounded-2xl bg-muted shadow-sm transition-all duration-500 group-hover:shadow-xl group-hover:shadow-primary/10 group-hover:-translate-y-1">
           <Image
             src={coverUrl}
             alt={title}
@@ -44,7 +44,7 @@ export function MangaCard({ manga }: MangaCardProps) {
           />
 
           {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300">
             <div className="absolute bottom-4 left-4 right-4 flex flex-col gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
               <div className="flex gap-2">
                 <Button size="icon-sm" className="rounded-full h-8 w-8 bg-primary text-primary-foreground shadow-lg shadow-primary/20">
@@ -87,7 +87,7 @@ export function MangaCard({ manga }: MangaCardProps) {
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 text-muted-foreground">
-              <div className="p-1 rounded-md bg-muted flex-shrink-0">
+              <div className="p-1 rounded-md bg-muted shrink-0">
                 <BookOpen className="h-3 w-3" />
               </div>
               <span className="text-[11px] font-bold uppercase tracking-wider truncate">Ch. {lastChapter}</span>

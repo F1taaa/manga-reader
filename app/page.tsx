@@ -8,8 +8,8 @@ import Link from 'next/link';
 import { Info, Sparkles, Zap, Filter } from 'lucide-react';
 
 async function HomePage() {
-  let popularManga = [];
-  let latestManga = [];
+  let popularManga: any[] = [];
+  let latestManga: any[] = [];
   let error = null;
 
   try {
@@ -100,7 +100,7 @@ async function HomePage() {
             ) : (
               Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="space-y-4">
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-3/4 rounded-2xl" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -137,7 +137,7 @@ async function HomePage() {
             ) : (
               Array.from({ length: 12 }).map((_, i) => (
                 <div key={i} className="space-y-4">
-                  <Skeleton className="aspect-[3/4] rounded-2xl" />
+                  <Skeleton className="aspect-3/4 rounded-2xl" />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-3/4" />
                     <Skeleton className="h-3 w-1/2" />
@@ -150,7 +150,7 @@ async function HomePage() {
       </main>
 
       <footer className="border-t border-border/50 pt-20 pb-10 bg-muted/20 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-px bg-linear-to-r from-transparent via-primary/20 to-transparent" />
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
             <div className="col-span-1 md:col-span-1">

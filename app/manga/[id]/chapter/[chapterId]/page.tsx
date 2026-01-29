@@ -59,7 +59,7 @@ export default async function ChapterReaderPage({
               <span className="hidden sm:inline">Back to Detail</span>
             </Link>
             <div className="h-4 w-px bg-white/20 hidden sm:block" />
-            <h1 className="text-sm font-medium truncate max-w-[200px] sm:max-w-md">
+            <h1 className="text-sm font-medium truncate max-w-50 sm:max-w-md">
               {mangaTitle}
             </h1>
           </div>
