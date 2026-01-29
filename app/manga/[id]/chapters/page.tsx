@@ -1,4 +1,4 @@
-import { getMangaById, getMangaChapters } from '@/lib/mangadex';
+import { getMangaById, getMangaChapters, getLocalizedString } from '@/lib/mangadex';
 import { Navigation } from '@/components/Navigation';
 import { ChapterList } from '@/components/ChapterList';
 import { notFound } from 'next/navigation';
@@ -26,9 +26,7 @@ export default async function ChaptersPage({ params }: ChaptersPageProps) {
 
     const manga = mangaResponse.data;
     const chapters = chaptersResponse.result === 'ok' ? chaptersResponse.data : [];
-    const title =
-      manga.attributes.title ||
-      (typeof manga.attributes.title === 'object' ? manga.attributes.title.en : 'Unknown');
+    const title = getLocalizedString(manga.attributes.title);
 
     return (
       <>

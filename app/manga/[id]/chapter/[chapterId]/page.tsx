@@ -1,8 +1,8 @@
-import { getChapterPages } from '@/lib/mangadex';
+import { getChapterPages, getMangaById, getLocalizedString } from '@/lib/mangadex';
 import { Reader } from '@/components/Reader';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Home } from 'lucide-react';
 
 interface ChapterReaderPageProps {
   params: Promise<{
@@ -12,9 +12,15 @@ interface ChapterReaderPageProps {
 }
 
 export async function generateMetadata({ params }: ChapterReaderPageProps) {
-  return {
-    title: 'Reading Manga | Manga Reader',
-  };
+  const { chapterId } = await params;
+  try {
+    // We could fetch chapter info here for a better title, but for now:
+    return {
+      title: 'Reading Chapter | Manga Reader',
+    };
+  } catch (error) {
+    return { title: 'Manga Reader' };
+  }
 }
 
 export default async function ChapterReaderPage({
@@ -23,33 +29,50 @@ export default async function ChapterReaderPage({
   const { id, chapterId } = await params;
 
   try {
-    const response = await getChapterPages(chapterId);
+    const [pagesResponse, mangaResponse] = await Promise.all([
+      getChapterPages(chapterId),
+      getMangaById(id)
+    ]);
 
-    if (response.result !== 'ok') {
+    if (pagesResponse.result !== 'ok' || mangaResponse.result !== 'ok') {
       notFound();
     }
 
-    const { baseUrl, chapter } = response;
-    const pages = chapter.data;
+    const { baseUrl, chapter: chapterData } = pagesResponse;
+    const pages = chapterData.data;
+    const mangaTitle = getLocalizedString(mangaResponse.data.attributes.title);
 
     if (!pages || pages.length === 0) {
       notFound();
     }
 
     return (
-      <div className="flex flex-col h-screen bg-background">
-        {/* Header with Navigation */}
-        <div className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 py-3">
-          <Link href={`/manga/${id}/chapters`}>
-            <button className="inline-flex items-center gap-2 text-primary hover:underline">
+      <div className="flex flex-col min-h-screen bg-black text-white">
+        {/* Minimalist Reader Header */}
+        <header className="sticky top-0 z-50 flex items-center justify-between border-b border-white/10 bg-black/80 px-4 py-3 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            <Link
+              href={`/manga/${id}`}
+              className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors"
+            >
               <ArrowLeft className="h-4 w-4" />
-              Back to Chapters
-            </button>
-          </Link>
-        </div>
+              <span className="hidden sm:inline">Back to Detail</span>
+            </Link>
+            <div className="h-4 w-px bg-white/20 hidden sm:block" />
+            <h1 className="text-sm font-medium truncate max-w-[200px] sm:max-w-md">
+              {mangaTitle}
+            </h1>
+          </div>
 
-        {/* Reader */}
-        <Reader baseUrl={baseUrl} hash={chapter.hash} pages={pages} />
+          <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+            <Home className="h-5 w-5" />
+          </Link>
+        </header>
+
+        {/* Reader Component */}
+        <main className="flex-1 flex flex-col">
+          <Reader baseUrl={baseUrl} hash={chapterData.hash} pages={pages} />
+        </main>
       </div>
     );
   } catch (error) {
