@@ -68,7 +68,7 @@ export function Navigation() {
           <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg group-hover:scale-110 transition-transform">
             <BookMarked className="h-5 w-5" />
           </div>
-          <span className="font-extrabold text-xl tracking-tighter hidden sm:inline-block bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <span className="font-extrabold text-xl tracking-tighter hidden sm:inline-block bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
             MANGA<span className="text-primary">HUB</span>
           </span>
         </Link>
