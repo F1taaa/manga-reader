@@ -1,146 +1,120 @@
-'use client';
-
-import React from "react"
-
-import { Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { searchManga } from '@/lib/mangadex';
 import { Navigation } from '@/components/Navigation';
 import { MangaCard } from '@/components/MangaCard';
-import { searchManga } from '@/lib/mangadex';
-import type { Manga } from '@/lib/types';
-import { Input } from '@/components/ui/input';
+import { Search, Filter, ArrowUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Search } from 'lucide-react';
-import SearchLoading from './loading';
 
-function SearchPageContent() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get('q') || '';
-  const [results, setResults] = useState<Manga[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [localQuery, setLocalQuery] = useState(query);
+const GENRE_MAP: Record<string, string> = {
+  'action': '391b0423-d847-456f-aff0-8b0cfc03066b',
+  'adventure': '87cc87cd-a395-47af-b27a-93258283bbc6',
+  'comedy': '4d32cc48-9f00-4cca-9b5a-a839f0764984',
+  'drama': 'b9af3a63-f058-46de-a9a0-e0c13906197a',
+  'fantasy': 'cdc58593-87dd-415e-bbc0-2ec27bf404cc',
+  'horror': 'cdad7e68-1419-41dd-bdce-27753074a640',
+  'mystery': 'ee968100-4191-4968-93d3-f82d72be7e46',
+  'romance': '423e2eae-a7a2-4a8b-ac03-a8351462d71d',
+  'sci-fi': '256c8bd9-4904-4360-bf4f-508a76d67183',
+  'slice of life': 'e5301a23-ebd9-49dd-a0cb-2add944c7fe9',
+};
 
-  useEffect(() => {
-    async function performSearch() {
-      if (!query) {
-        setResults([]);
-        setLoading(false);
-        return;
-      }
+interface SearchPageProps {
+  searchParams: Promise<{
+    q?: string;
+    includedTags?: string;
+    sort?: string;
+  }>;
+}
 
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await searchManga({
-          title: query,
-          limit: 50,
-          offset: 0,
-          contentRating: ['safe', 'suggestive', 'erotica'],
-        });
+async function SearchPage({ searchParams }: SearchPageProps) {
+  const params = await searchParams;
+  const query = params.q || '';
+  const includedTagsRaw = params.includedTags || '';
+  const sort = params.sort || 'relevance';
 
-        if (response.result === 'ok') {
-          setResults(response.data);
-        } else {
-          setError('No results found');
-        }
-      } catch (err) {
-        setError('Failed to search manga');
-        console.error('Search error:', err);
-      } finally {
-        setLoading(false);
-      }
+  // Map genre names to IDs
+  const includedTags = includedTagsRaw
+    .split(',')
+    .map(tag => GENRE_MAP[tag.toLowerCase()] || tag)
+    .filter(tag => tag.length > 0);
+
+  let order: Record<string, 'asc' | 'desc'> = { relevance: 'desc' };
+  if (sort === 'followedCount') order = { followedCount: 'desc' };
+  if (sort === 'latestUploadedChapter') order = { latestUploadedChapter: 'desc' };
+  if (sort === 'rating') order = { rating: 'desc' };
+  if (sort === 'createdAt') order = { createdAt: 'desc' };
+
+  let mangaResults: any[] = [];
+  let error: string | null = null;
+
+  try {
+    const results = await searchManga({
+      title: query,
+      includedTags: includedTags,
+      order: order,
+      limit: 30,
+      contentRating: ['safe', 'suggestive', 'erotica'],
+    });
+
+    if (results.result === 'ok') {
+      mangaResults = results.data;
     }
-
-    performSearch();
-  }, [query]);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (localQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(localQuery)}`;
-    }
-  };
+  } catch (err) {
+    console.error('Search error:', err);
+    error = 'Failed to fetch search results. Please try again later.';
+  }
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <Navigation />
-      <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-12">
-          {/* Search Form */}
-          <div className="mb-12">
-            <form onSubmit={handleSearch} className="flex gap-2 max-w-md">
-              <div className="relative flex-1">
-                <Input
-                  type="search"
-                  placeholder="Search manga..."
-                  value={localQuery}
-                  onChange={(e) => setLocalQuery(e.target.value)}
-                  className="pl-10"
-                />
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+
+      <main className="container mx-auto px-4 py-12">
+        <header className="mb-12">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-2">
+                <Search className="h-5 w-5" />
+                <span className="text-sm font-black uppercase tracking-widest">Search Results</span>
               </div>
-              <Button type="submit" variant="default">
-                Search
-              </Button>
-            </form>
-          </div>
-
-          {/* Results */}
-          {query && (
-            <>
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold text-foreground">
-                  Search Results for "{query}"
-                </h2>
-                <p className="text-muted-foreground">
-                  {loading ? 'Searching...' : `Found ${results.length} results`}
-                </p>
-              </div>
-
-              {error && (
-                <div className="mb-8 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-                  <p>{error}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-                {loading ? (
-                  Array.from({ length: 10 }).map((_, i) => (
-                    <div key={i} className="rounded-lg overflow-hidden">
-                      <Skeleton className="aspect-[3/4]" />
-                    </div>
-                  ))
-                ) : results.length > 0 ? (
-                  results.map((manga) => (
-                    <MangaCard key={manga.id} manga={manga} />
-                  ))
-                ) : (
-                  <div className="col-span-full py-12 text-center">
-                    <p className="text-muted-foreground">No manga found matching your search</p>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {!query && !loading && (
-            <div className="py-12 text-center">
-              <p className="text-muted-foreground">Enter a search query to find manga</p>
+              <h1 className="text-4xl font-black tracking-tighter">
+                {query ? `Results for "${query}"` : includedTagsRaw ? `Genre: ${includedTagsRaw}` : 'All Manga'}
+              </h1>
             </div>
-          )}
-        </div>
+
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="rounded-xl font-bold gap-2">
+                <Filter className="h-4 w-4" />
+                Filter
+              </Button>
+              <Button variant="outline" className="rounded-xl font-bold gap-2">
+                <ArrowUpDown className="h-4 w-4" />
+                Sort: {sort}
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {error ? (
+          <div className="rounded-2xl border border-destructive/50 bg-destructive/5 p-8 text-center">
+            <p className="text-destructive font-bold">{error}</p>
+          </div>
+        ) : mangaResults.length > 0 ? (
+          <div className="grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {mangaResults.map((manga) => (
+              <MangaCard key={manga.id} manga={manga} />
+            ))}
+          </div>
+        ) : (
+          <div className="py-24 text-center">
+            <div className="inline-flex p-6 rounded-full bg-muted mb-6">
+              <Search className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h2 className="text-2xl font-bold mb-2">No results found</h2>
+            <p className="text-muted-foreground">Try adjusting your search or filters to find what you're looking for.</p>
+          </div>
+        )}
       </main>
-    </>
+    </div>
   );
 }
 
-export default function SearchPage() {
-  return (
-    <Suspense fallback={<SearchLoading />}>
-      <SearchPageContent />
-    </Suspense>
-  );
-}
+export default SearchPage;
