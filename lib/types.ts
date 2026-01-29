@@ -126,35 +126,3 @@ export interface SearchParams {
   order?: Record<string, "asc" | "desc">;
   includes?: RelationshipType[];
 }
-
-export type ReadingStatus = "reading" | "completed" | "on_hold" | "dropped" | "plan_to_read";
-
-export interface LibraryItem {
-  mangaId: string;
-  mangaTitle: string;
-  coverArt: string;
-  status: ReadingStatus;
-  addedAt: string;
-  lastReadAt?: string;
-  lastChapterRead?: string;
-  totalChapters?: number;
-}
-
-export interface HistoryItem {
-  mangaId: string;
-  mangaTitle: string;
-  chapterId: string;
-  chapterNumber: string;
-  volumeNumber: string | null;
-  pageNumber: number;
-  timestamp: string;
-}
-
-export interface UserData {
-  library: Record<string, LibraryItem>;
-  history: HistoryItem[];
-  user: {
-    username: string;
-    email: string;
-  } | null;
-}

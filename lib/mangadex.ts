@@ -74,12 +74,7 @@ export async function searchManga(params: SearchParams): Promise<MangaList> {
   if (params.offset) query.append('offset', params.offset.toString());
 
   params.status?.forEach((s) => query.append('status[]', s));
-
-  const contentRatings = params.contentRating || ['safe', 'suggestive', 'erotica'];
-  contentRatings.forEach((cr) => {
-    if (cr !== 'pornographic') query.append('contentRating[]', cr);
-  });
-
+  params.contentRating?.forEach((cr) => query.append('contentRating[]', cr));
   params.includedTags?.forEach((t) => query.append('includedTags[]', t));
   params.excludedTags?.forEach((t) => query.append('excludedTags[]', t));
 
@@ -121,45 +116,13 @@ export async function getMangaChapters(
   const query = new URLSearchParams();
   query.append('manga', mangaId);
   query.append('translatedLanguage[]', translatedLanguage);
-  query.append('limit', Math.min(limit, 100).toString());
+  query.append('limit', limit.toString());
   query.append('offset', offset.toString());
   query.append('order[chapter]', 'desc');
   query.append('includes[]', 'scanlation_group');
-  query.append('contentRating[]', 'safe');
-  query.append('contentRating[]', 'suggestive');
-  query.append('contentRating[]', 'erotica');
 
   return fetchMangaDex<ChapterList>(`/chapter?${query.toString()}`, {
     next: { revalidate: 1800 },
-  });
-}
-
-/**
- * Deduplicate chapters by chapter number, giving priority to those with more pages
- * or certain scanlation groups (simplified: first one seen).
- */
-export function deduplicateChapters(chapters: Chapter[]): Chapter[] {
-  const seen = new Map<string, Chapter>();
-
-  // Sort by chapter number and then by number of pages (descending)
-  // to pick the "best" version if duplicates exist
-  const sorted = [...chapters].sort((a, b) => {
-    const numA = parseFloat(a.attributes.chapter || '0');
-    const numB = parseFloat(b.attributes.chapter || '0');
-    if (numA !== numB) return numA - numB;
-    return (b.attributes.pages || 0) - (a.attributes.pages || 0);
-  });
-
-  for (const chapter of sorted) {
-    const key = chapter.attributes.chapter || '0';
-    // If we have multiple with same chapter number, we keep the one with most pages (due to sort)
-    if (!seen.has(key)) {
-      seen.set(key, chapter);
-    }
-  }
-
-  return Array.from(seen.values()).sort((a, b) => {
-    return parseFloat(b.attributes.chapter || '0') - parseFloat(a.attributes.chapter || '0');
   });
 }
 
@@ -175,11 +138,9 @@ export async function getChapterPages(chapterId: string): Promise<AtHomeServer> 
 /**
  * Get the full URL for a manga cover image
  */
-export function getCoverImageUrl(mangaId: string, filename: string, size: 'small' | 'medium' | 'original' = 'small'): string {
+export function getCoverImageUrl(mangaId: string, filename: string, size: 'small' | 'medium' = 'small'): string {
   if (!filename) return '/placeholder.svg';
-  let suffix = '';
-  if (size === 'small') suffix = '.256.jpg';
-  else if (size === 'medium') suffix = '.512.jpg';
+  const suffix = size === 'small' ? '.256.jpg' : '.512.jpg';
   return `https://uploads.mangadex.org/covers/${mangaId}/${filename}${suffix}`;
 }
 
@@ -193,7 +154,7 @@ export function getChapterPageUrl(baseUrl: string, hash: string, fileName: strin
 /**
  * Get popular manga (shortcut)
  */
-export async function getPopularManga(): Promise<MangaList> {
+export async function getPopularManga(p0: number): Promise<MangaList> {
   return searchManga({
     limit: 20,
     offset: 0,
@@ -205,7 +166,7 @@ export async function getPopularManga(): Promise<MangaList> {
 /**
  * Get latest manga updates (shortcut)
  */
-export async function getLatestManga(): Promise<MangaList> {
+export async function getLatestManga(p0: number): Promise<MangaList> {
   return searchManga({
     limit: 20,
     offset: 0,
