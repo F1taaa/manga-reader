@@ -9,15 +9,20 @@ import {
 } from "@/lib/mangadex";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, Share2, Heart } from "lucide-react";
+import { BookOpen, Calendar, Share2, Heart, HeartOff } from "lucide-react";
 import Link from "next/link";
+import { useUser } from "@/context/UserContext";
 
 interface MangaHeaderProps {
   manga: Manga;
   firstChapterId?: string;
+  externalUrl?: string;
 }
 
-export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
+export function MangaHeader({ manga, firstChapterId, externalUrl }: MangaHeaderProps) {
+  const { library, addToLibrary, removeFromLibrary } = useUser();
+  const isInLibrary = !!library[manga.id];
+
   const coverArt = getRelationship(manga, "cover_art");
   const author = getRelationship(manga, "author");
 
@@ -74,7 +79,14 @@ export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
             <p className="text-lg text-muted-foreground">{authorName}</p>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4 md:justify-start">
-              {firstChapterId ? (
+              {externalUrl ? (
+                <Button size="lg" className="px-8" asChild>
+                  <a href={externalUrl} target="_blank" rel="noopener noreferrer">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Read Now
+                  </a>
+                </Button>
+              ) : firstChapterId ? (
                 <Button size="lg" className="px-8" asChild>
                   <Link href={`/manga/${manga.id}/chapter/${firstChapterId}`}>
                     <BookOpen className="mr-2 h-5 w-5" />
@@ -87,9 +99,33 @@ export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
                   Read Now
                 </Button>
               )}
-              <Button size="lg" variant="outline">
-                <Heart className="mr-2 h-5 w-5" />
-                Add to Library
+              <Button
+                size="lg"
+                variant={isInLibrary ? "secondary" : "outline"}
+                onClick={() => {
+                  if (isInLibrary) {
+                    removeFromLibrary(manga.id);
+                  } else {
+                    addToLibrary({
+                      mangaId: manga.id,
+                      mangaTitle: title,
+                      coverArt: coverUrl,
+                      status: 'reading',
+                    });
+                  }
+                }}
+              >
+                {isInLibrary ? (
+                  <>
+                    <HeartOff className="mr-2 h-5 w-5 text-destructive" />
+                    Remove from Library
+                  </>
+                ) : (
+                  <>
+                    <Heart className="mr-2 h-5 w-5 text-primary" />
+                    Add to Library
+                  </>
+                )}
               </Button>
               <Button size="icon" variant="ghost">
                 <Share2 className="h-5 w-5" />

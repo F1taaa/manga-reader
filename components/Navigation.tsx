@@ -20,9 +20,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/context/UserContext';
 
 export function Navigation() {
   const router = useRouter();
+  const { user } = useUser();
   const [searchQuery, setSearchQuery] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -47,8 +49,8 @@ export function Navigation() {
   const navLinks = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Browse', href: '/search', icon: Compass },
-    { name: 'Library', href: '#', icon: Library },
-    { name: 'History', href: '#', icon: History },
+    { name: 'Library', href: '/library', icon: Library },
+    { name: 'History', href: '/history', icon: History },
   ];
 
   if (!mounted) return null;
@@ -119,9 +121,11 @@ export function Navigation() {
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
 
-          <Button size="sm" className="hidden sm:flex rounded-full px-5 shadow-primary/20">
-            Sign In
-          </Button>
+          <Link href="/profile">
+            <Button size="sm" className="hidden sm:flex rounded-full px-5 shadow-primary/20">
+              {user ? user.username : 'Sign In'}
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -155,9 +159,11 @@ export function Navigation() {
                   </Link>
                 ))}
               </div>
-              <Button className="w-full h-12 rounded-xl shadow-lg">
-                Sign In
-              </Button>
+              <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
+                <Button className="w-full h-12 rounded-xl shadow-lg">
+                  {user ? user.username : 'Sign In'}
+                </Button>
+              </Link>
             </div>
           </motion.div>
         )}

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { UserData, LibraryItem, HistoryItem, ReadingStatus } from '@/lib/types';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import type { UserData, LibraryItem, HistoryItem, ReadingStatus, AppStorage, UserAccount, User } from '@/lib/types';
 
 interface UserContextType extends UserData {
   isLoading: boolean;
@@ -11,7 +11,7 @@ interface UserContextType extends UserData {
   addToLibrary: (item: Omit<LibraryItem, 'addedAt'>) => void;
   removeFromLibrary: (mangaId: string) => void;
   updateLibraryStatus: (mangaId: string, status: ReadingStatus) => void;
-  addToHistory: (item: Omit<HistoryItem, 'timestamp'>) => void;
+  addToHistory: (item: Omit<HistoryItem, 'timestamp' | 'page' | 'totalPages'>, page: number, totalPages: number) => void;
   removeFromHistory: (chapterId: string) => void;
   clearHistory: () => void;
   exportData: () => string;
@@ -20,101 +20,197 @@ interface UserContextType extends UserData {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'mangadex_reader_user_data';
+const STORAGE_KEY = 'mangadex_reader_app_storage';
+const LEGACY_STORAGE_KEY = 'mangadex_reader_user_data';
 
-const DEFAULT_DATA: UserData = {
+const DEFAULT_ACCOUNT: UserAccount = {
+  user: null,
   library: {},
   history: [],
-  user: null,
+};
+
+const INITIAL_STORAGE: AppStorage = {
+  accounts: {
+    guest: DEFAULT_ACCOUNT,
+  },
+  currentAccountEmail: 'guest',
 };
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  const [data, setData] = useState<UserData>(DEFAULT_DATA);
+  const [storage, setStorage] = useState<AppStorage>(INITIAL_STORAGE);
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
+  // Load from localStorage on mount
   useEffect(() => {
     setMounted(true);
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
+    const savedStorage = localStorage.getItem(STORAGE_KEY);
+    const legacyData = localStorage.getItem(LEGACY_STORAGE_KEY);
+
+    if (savedStorage) {
       try {
-        setData(JSON.parse(savedData));
+        setStorage(JSON.parse(savedStorage));
       } catch (e) {
-        console.error('Failed to parse user data', e);
+        console.error('Failed to parse app storage', e);
+      }
+    } else if (legacyData) {
+      // Migrate legacy data
+      try {
+        const parsedLegacy = JSON.parse(legacyData);
+        const migratedStorage: AppStorage = {
+          accounts: {
+            guest: {
+              user: null,
+              library: parsedLegacy.library || {},
+              history: parsedLegacy.history || [],
+            },
+          },
+          currentAccountEmail: 'guest',
+        };
+
+        // If there was a user in legacy data, create an account for them
+        if (parsedLegacy.user?.email) {
+          migratedStorage.accounts[parsedLegacy.user.email] = {
+            user: parsedLegacy.user,
+            library: parsedLegacy.library || {},
+            history: parsedLegacy.history || [],
+          };
+          migratedStorage.currentAccountEmail = parsedLegacy.user.email;
+        }
+
+        setStorage(migratedStorage);
+        // Clear legacy data after migration
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      } catch (e) {
+        console.error('Failed to migrate legacy data', e);
       }
     }
     setIsLoading(false);
   }, []);
 
+  // Save to localStorage whenever storage changes
   useEffect(() => {
     if (mounted) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(storage));
     }
-  }, [data, mounted]);
+  }, [storage, mounted]);
+
+  // Derived state for the current account
+  const currentAccount = storage.accounts[storage.currentAccountEmail] || storage.accounts.guest;
 
   const login = (username: string, email: string) => {
-    setData((prev: UserData) => ({ ...prev, user: { username, email } }));
-  };
-
-  const signup = (username: string, email: string) => {
-    setData((prev: UserData) => ({ ...prev, user: { username, email } }));
-  };
-
-  const logout = () => {
-    setData((prev: UserData) => ({ ...prev, user: null }));
-  };
-
-  const addToLibrary = (item: Omit<LibraryItem, 'addedAt'>) => {
-    setData((prev: UserData) => ({
-      ...prev,
-      library: {
-        ...prev.library,
-        [item.mangaId]: {
-          ...item,
-          addedAt: new Date().toISOString(),
+    setStorage(prev => {
+      const existingAccount = prev.accounts[email] || { ...DEFAULT_ACCOUNT, user: { username, email } };
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...existingAccount,
+            user: { username, email },
+          }
         },
-      },
-    }));
-  };
-
-  const removeFromLibrary = (mangaId: string) => {
-    setData((prev: UserData) => {
-      const newLibrary = { ...prev.library };
-      delete newLibrary[mangaId];
-      return { ...prev, library: newLibrary };
+        currentAccountEmail: email,
+      };
     });
   };
 
-  const updateLibraryStatus = (mangaId: string, status: ReadingStatus) => {
-    setData((prev: UserData) => {
-      if (!prev.library[mangaId]) return prev;
+  const signup = (username: string, email: string) => {
+    login(username, email);
+  };
+
+  const logout = () => {
+    setStorage(prev => ({
+      ...prev,
+      currentAccountEmail: 'guest',
+    }));
+  };
+
+  const addToLibrary = (item: Omit<LibraryItem, 'addedAt'>) => {
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
       return {
         ...prev,
-        library: {
-          ...prev.library,
-          [mangaId]: {
-            ...prev.library[mangaId],
-            status,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            library: {
+              ...account.library,
+              [item.mangaId]: {
+                ...item,
+                addedAt: new Date().toISOString(),
+              },
+            },
           },
         },
       };
     });
   };
 
-  const addToHistory = (item: Omit<HistoryItem, 'timestamp'>) => {
-    setData((prev: UserData) => {
-      // Remove existing entry for this manga+chapter if it exists to move it to top
-      const filteredHistory = prev.history.filter(
+  const removeFromLibrary = (mangaId: string) => {
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
+      const newLibrary = { ...account.library };
+      delete newLibrary[mangaId];
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            library: newLibrary,
+          },
+        },
+      };
+    });
+  };
+
+  const updateLibraryStatus = (mangaId: string, status: ReadingStatus) => {
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
+      if (!account.library[mangaId]) return prev;
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            library: {
+              ...account.library,
+              [mangaId]: {
+                ...account.library[mangaId],
+                status,
+              },
+            },
+          },
+        },
+      };
+    });
+  };
+
+  const addToHistory = (item: Omit<HistoryItem, 'timestamp' | 'page' | 'totalPages'>, page: number, totalPages: number) => {
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
+
+      const filteredHistory = account.history.filter(
         (h: HistoryItem) => !(h.mangaId === item.mangaId && h.chapterId === item.chapterId)
       );
 
-      const newHistory = [
-        { ...item, timestamp: new Date().toISOString() },
-        ...filteredHistory,
-      ].slice(0, 100);
+      const newHistoryItem: HistoryItem = {
+        ...item,
+        page,
+        totalPages,
+        timestamp: new Date().toISOString(),
+      };
 
-      // Also update library item if it exists
-      const newLibrary = { ...prev.library };
+      const newHistory = [newHistoryItem, ...filteredHistory].slice(0, 100);
+
+      const newLibrary = { ...account.library };
       if (newLibrary[item.mangaId]) {
         newLibrary[item.mangaId] = {
           ...newLibrary[item.mangaId],
@@ -123,33 +219,75 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      return { ...prev, history: newHistory, library: newLibrary };
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            history: newHistory,
+            library: newLibrary,
+          },
+        },
+      };
     });
   };
 
   const removeFromHistory = (chapterId: string) => {
-    setData((prev: UserData) => ({
-      ...prev,
-      history: prev.history.filter((h: HistoryItem) => h.chapterId !== chapterId),
-    }));
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            history: account.history.filter((h: HistoryItem) => h.chapterId !== chapterId),
+          },
+        },
+      };
+    });
   };
 
   const clearHistory = () => {
-    setData((prev: UserData) => ({ ...prev, history: [] }));
+    setStorage(prev => {
+      const email = prev.currentAccountEmail;
+      const account = prev.accounts[email] || DEFAULT_ACCOUNT;
+      return {
+        ...prev,
+        accounts: {
+          ...prev.accounts,
+          [email]: {
+            ...account,
+            history: [],
+          },
+        },
+      };
+    });
   };
 
   const exportData = () => {
-    return JSON.stringify({ ...data, exportDate: new Date().toISOString() });
+    return JSON.stringify({ ...currentAccount, exportDate: new Date().toISOString() });
   };
 
   const importData = (jsonData: string) => {
     try {
       const parsed = JSON.parse(jsonData);
       if (parsed.library && Array.isArray(parsed.history)) {
-        setData({
-          library: parsed.library,
-          history: parsed.history,
-          user: parsed.user || null,
+        setStorage(prev => {
+          const email = prev.currentAccountEmail;
+          return {
+            ...prev,
+            accounts: {
+              ...prev.accounts,
+              [email]: {
+                user: parsed.user || prev.accounts[email]?.user || null,
+                library: parsed.library,
+                history: parsed.history,
+              },
+            },
+          };
         });
         return true;
       }
@@ -162,7 +300,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   return (
     <UserContext.Provider
       value={{
-        ...data,
+        ...currentAccount,
         isLoading,
         login,
         signup,

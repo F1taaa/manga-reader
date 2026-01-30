@@ -153,6 +153,9 @@ export interface HistoryItem {
   chapterId: string;
   chapterNumber: string;
   chapterTitle?: string;
+  volumeNumber?: string | null;
+  page: number;
+  totalPages: number;
   timestamp: string;
 }
 
@@ -160,6 +163,17 @@ export interface HistoryItem {
 export interface User {
   username: string;
   email: string;
+}
+
+export interface UserAccount {
+  user: User | null;
+  library: Record<string, LibraryItem>;
+  history: HistoryItem[];
+}
+
+export interface AppStorage {
+  accounts: Record<string, UserAccount>;
+  currentAccountEmail: string;
 }
 
 export interface UserData {

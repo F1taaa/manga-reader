@@ -1,6 +1,7 @@
 import type {
   MangaList,
   MangaResponse,
+  Chapter,
   ChapterList,
   AtHomeServer,
   SearchParams,
@@ -149,6 +150,43 @@ export function getCoverImageUrl(mangaId: string, filename: string, size: 'small
  */
 export function getChapterPageUrl(baseUrl: string, hash: string, fileName: string): string {
   return `${baseUrl}/data/${hash}/${fileName}`;
+}
+
+/**
+ * Get a single chapter by its ID
+ */
+export async function getChapterById(id: string): Promise<{ result: string, data: Chapter }> {
+  const query = new URLSearchParams();
+  query.append('includes[]', 'manga');
+  query.append('includes[]', 'scanlation_group');
+
+  return fetchMangaDex<{ result: string, data: Chapter }>(`/chapter/${id}?${query.toString()}`, {
+    next: { revalidate: 3600 },
+  });
+}
+
+/**
+ * Deduplicate and sort chapters
+ */
+export function deduplicateChapters(chapters: Chapter[]): Chapter[] {
+  const seen = new Map<string, Chapter>();
+
+  chapters.forEach(chapter => {
+    const chapterNum = chapter.attributes.chapter || '0';
+    const lang = chapter.attributes.translatedLanguage;
+    const key = `${chapterNum}-${lang}`;
+
+    const existing = seen.get(key);
+    if (!existing || chapter.attributes.pages > existing.attributes.pages) {
+      seen.set(key, chapter);
+    }
+  });
+
+  return Array.from(seen.values()).sort((a, b) => {
+    const numA = parseFloat(a.attributes.chapter || '0');
+    const numB = parseFloat(b.attributes.chapter || '0');
+    return numB - numA; // Default descending
+  });
 }
 
 /**

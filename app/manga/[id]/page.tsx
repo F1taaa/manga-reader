@@ -1,4 +1,4 @@
-import { getMangaById, getMangaChapters, getLocalizedString } from '@/lib/mangadex';
+import { getMangaById, getMangaChapters, getLocalizedString, deduplicateChapters } from '@/lib/mangadex';
 import { Navigation } from '@/components/Navigation';
 import { MangaHeader } from '@/components/MangaHeader';
 import { ChapterList } from '@/components/ChapterList';
@@ -32,18 +32,6 @@ export async function generateMetadata({ params }: MangaPageProps) {
   };
 }
 
-// Helper function to deduplicate chapters
-function deduplicateChapters(chapters: any[]) {
-  const seen = new Map();
-  return chapters.filter(chapter => {
-    const key = `${chapter.attributes.chapter}-${chapter.attributes.translatedLanguage}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.set(key, true);
-    return true;
-  });
-}
 
 export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
@@ -64,14 +52,16 @@ export default async function MangaPage({ params }: MangaPageProps) {
     // Filter and deduplicate
     const chapters = deduplicateChapters(allChapters);
 
-    // Find the first chapter (lowest number) that is NOT external
-    const firstChapter = [...chapters]
-      .filter(ch => !ch.attributes.externalUrl)
-      .sort((a, b) => {
-        const numA = parseFloat(a.attributes.chapter || '0');
-        const numB = parseFloat(b.attributes.chapter || '0');
-        return numA - numB;
-      })[0];
+    // Find the first chapter (lowest number)
+    const sortedChapters = [...chapters].sort((a, b) => {
+      const numA = parseFloat(a.attributes.chapter || '0');
+      const numB = parseFloat(b.attributes.chapter || '0');
+      return numA - numB;
+    });
+
+    // Prioritize internal chapters (with pages > 0)
+    const firstInternal = sortedChapters.find(ch => !ch.attributes.externalUrl && ch.attributes.pages > 0);
+    const firstChapter = firstInternal || sortedChapters[0];
 
     const description = getLocalizedString(manga.attributes.description);
     const tags = manga.attributes.tags ?? [];
@@ -80,7 +70,11 @@ export default async function MangaPage({ params }: MangaPageProps) {
       <div className="min-h-screen bg-background pb-20">
         <Navigation />
 
-        <MangaHeader manga={manga} firstChapterId={firstChapter?.id} />
+        <MangaHeader
+          manga={manga}
+          firstChapterId={firstChapter?.id}
+          externalUrl={firstChapter?.attributes.externalUrl ?? undefined}
+        />
 
         <main className="mx-auto max-w-7xl px-4 py-12">
           <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">

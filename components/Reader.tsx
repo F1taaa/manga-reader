@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { getChapterPageUrl } from '@/lib/mangadex';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/context/UserContext';
 
 interface ReaderProps {
   mangaId: string;
@@ -38,10 +39,34 @@ export function Reader({
   const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { history, addToHistory } = useUser();
 
   const pageUrl = getChapterPageUrl(baseUrl, hash, pages[page]);
 
-  // Load last page if returning to this chapter
+  // Load last page from history on mount
+  useEffect(() => {
+    const historyItem = history.find(h => h.chapterId === chapterId);
+    if (historyItem && historyItem.page >= 0 && historyItem.page < pages.length) {
+      setPage(historyItem.page);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Sync with history
+  useEffect(() => {
+    if (mangaId && chapterId) {
+      addToHistory({
+        mangaId,
+        mangaTitle,
+        chapterId,
+        chapterNumber,
+        volumeNumber,
+        coverArt: '', // Will be updated if manga is in library
+      }, page, pages.length);
+    }
+  }, [page, chapterId, mangaId]);
+
+  // Handle scroll to top on page change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [page]);
