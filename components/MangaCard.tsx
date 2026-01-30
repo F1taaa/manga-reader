@@ -18,7 +18,7 @@ export function MangaCard({ manga }: MangaCardProps) {
   const coverFileName = coverArt?.attributes?.fileName;
 
   const title = getLocalizedString(manga.attributes.title);
-  const lastChapter = manga.attributes.lastChapter || "N/A";
+  const lastChapter = manga.attributes.lastChapter;
 
   const coverUrl = coverFileName
     ? getCoverImageUrl(manga.id, coverFileName, "medium")
@@ -90,7 +90,9 @@ export function MangaCard({ manga }: MangaCardProps) {
               <div className="p-1 rounded-md bg-muted shrink-0">
                 <BookOpen className="h-3 w-3" />
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-wider truncate">Ch. {lastChapter}</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider truncate">
+                {lastChapter && lastChapter !== 'N/A' ? `Ch. ${lastChapter}` : 'Manga'}
+              </span>
             </div>
 
             <div className="flex items-center gap-1 text-amber-500">

@@ -161,23 +161,23 @@ export function Reader({
       </div>
 
       {/* Persistent Bottom Controls */}
-      <div className="sticky bottom-0 z-20 flex flex-col items-center gap-4 bg-black/90 p-6 backdrop-blur-md">
-        <div className="flex items-center gap-8">
+      <div className="sticky bottom-0 z-20 flex flex-col items-center gap-2 md:gap-4 bg-black/90 p-4 md:p-6 backdrop-blur-md">
+        <div className="flex items-center gap-4 md:gap-8">
           <Button
             variant="ghost"
             size="icon"
             onClick={goToPrevious}
             disabled={page === 0}
-            className="h-12 w-12 rounded-full text-white hover:bg-white/10"
+            className="h-10 w-10 md:h-12 md:w-12 rounded-full text-white hover:bg-white/10"
           >
-            <ChevronLeft className="h-8 w-8" />
+            <ChevronLeft className="h-6 w-6 md:h-8 md:w-8" />
           </Button>
 
           <div className="flex flex-col items-center">
-            <span className="text-sm font-bold text-white">
+            <span className="text-xs md:text-sm font-bold text-white">
               {page + 1} / {pages.length}
             </span>
-            <div className="mt-2 h-1 w-48 overflow-hidden rounded-full bg-white/10">
+            <div className="mt-1 md:mt-2 h-1 w-32 md:w-48 overflow-hidden rounded-full bg-white/10">
               <div
                 className="h-full bg-white transition-all duration-300"
                 style={{ width: `${((page + 1) / pages.length) * 100}%` }}
@@ -190,9 +190,9 @@ export function Reader({
             size="icon"
             onClick={goToNext}
             disabled={page === pages.length - 1}
-            className="h-12 w-12 rounded-full text-white hover:bg-white/10"
+            className="h-10 w-10 md:h-12 md:w-12 rounded-full text-white hover:bg-white/10"
           >
-            <ChevronRight className="h-8 w-8" />
+            <ChevronRight className="h-6 w-6 md:h-8 md:w-8" />
           </Button>
         </div>
 

@@ -34,16 +34,29 @@ export function ChapterList({ chapters, mangaId }: ChapterListProps) {
     );
   }
 
-  const sortedChapters = [...chapters].sort((a, b) => {
+  // Filter out chapters that are completely empty or have N/A attributes
+  const validChapters = chapters.filter(chapter => {
+    const attr = chapter.attributes;
+    const hasChapter = attr.chapter !== null && attr.chapter !== undefined && attr.chapter !== 'N/A';
+    const hasTitle = attr.title !== null && attr.title !== undefined && attr.title !== '' && attr.title !== 'N/A';
+
+    // Allow chapters that have at least a number or a title, and are not explicitly "N/A"
+    return (hasChapter || hasTitle) && attr.chapter !== 'N/A';
+  });
+
+  const sortedChapters = [...validChapters].sort((a, b) => {
     const numA = parseFloat(a.attributes.chapter || '0');
     const numB = parseFloat(b.attributes.chapter || '0');
     return sortOrder === 'desc' ? numB - numA : numA - numB;
   });
 
-  // Group by volume
+  // Group by volume, avoiding "N/A" volumes
   const volumes: Record<string, Chapter[]> = {};
   sortedChapters.forEach(chapter => {
-    const vol = chapter.attributes.volume || 'No Volume';
+    let vol = chapter.attributes.volume;
+    if (vol === 'N/A' || vol === null || vol === undefined) {
+      vol = 'No Volume';
+    }
     if (!volumes[vol]) volumes[vol] = [];
     volumes[vol].push(chapter);
   });

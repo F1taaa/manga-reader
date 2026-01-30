@@ -1,8 +1,8 @@
 import { searchManga } from '@/lib/mangadex';
 import { Navigation } from '@/components/Navigation';
 import { MangaCard } from '@/components/MangaCard';
-import { Search, Filter, ArrowUpDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search } from 'lucide-react';
+import { SearchFilters } from '@/components/SearchFilters';
 
 const GENRE_MAP: Record<string, string> = {
   'action': '391b0423-d847-456f-aff0-8b0cfc03066b',
@@ -25,7 +25,7 @@ interface SearchPageProps {
   }>;
 }
 
-async function SearchPage({ searchParams }: SearchPageProps) {
+export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const query = params.q || '';
   const includedTagsRaw = params.includedTags || '';
@@ -34,7 +34,7 @@ async function SearchPage({ searchParams }: SearchPageProps) {
   // Map genre names to IDs
   const includedTags = includedTagsRaw
     .split(',')
-    .map(tag => GENRE_MAP[tag.toLowerCase()] || tag)
+    .map(tag => GENRE_MAP[tag.trim().toLowerCase()] || tag)
     .filter(tag => tag.length > 0);
 
   let order: Record<string, 'asc' | 'desc'> = { relevance: 'desc' };
@@ -42,6 +42,11 @@ async function SearchPage({ searchParams }: SearchPageProps) {
   if (sort === 'latestUploadedChapter') order = { latestUploadedChapter: 'desc' };
   if (sort === 'rating') order = { rating: 'desc' };
   if (sort === 'createdAt') order = { createdAt: 'desc' };
+
+  // If no query, relevance might not work well, fallback to followedCount if requested but default to relevance if query exists
+  if (!query && sort === 'relevance') {
+    order = { followedCount: 'desc' };
+  }
 
   let mangaResults: any[] = [];
   let error: string | null = null;
@@ -80,16 +85,7 @@ async function SearchPage({ searchParams }: SearchPageProps) {
               </h1>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="rounded-xl font-bold gap-2">
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
-              <Button variant="outline" className="rounded-xl font-bold gap-2">
-                <ArrowUpDown className="h-4 w-4" />
-                Sort: {sort}
-              </Button>
-            </div>
+            <SearchFilters />
           </div>
         </header>
 
@@ -116,5 +112,3 @@ async function SearchPage({ searchParams }: SearchPageProps) {
     </div>
   );
 }
-
-export default SearchPage;
