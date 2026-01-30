@@ -195,7 +195,7 @@ async function HomePage() {
           </div>
 
           <div className="pt-10 border-t border-border/50 flex flex-col md:flex-row justify-between items-center gap-6 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            <p>&copy; {new Date().getFullYear()} MangaHub. Data by MangaDex API.</p>
+            <p>&copy; {new Date().getFullYear()} MangaHub UI Template.</p>
             <div className="flex gap-8">
               <span>English</span>
               <span>Dark Mode</span>

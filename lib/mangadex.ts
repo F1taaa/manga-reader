@@ -9,37 +9,14 @@ import type {
   Manga,
   Relationship,
 } from './types';
-
-const API_BASE = 'https://api.mangadex.org';
+import { MOCK_MANGA, MOCK_CHAPTERS, MOCK_PAGES } from './mock-data';
 
 /**
- * Utility for fetching from MangaDex API with error handling
+ * Utility for fetching (Mocked)
  */
 async function fetchMangaDex<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
-
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    let errorMessage = `MangaDex API error: ${response.statusText}`;
-    try {
-      const errorData = await response.json();
-      if (errorData.errors && errorData.errors.length > 0) {
-        errorMessage = errorData.errors[0].detail || errorMessage;
-      }
-    } catch (e) {
-      // Ignore JSON parse error
-    }
-    throw new Error(errorMessage);
-  }
-
-  return response.json();
+  // Static mock implementation
+  return {} as T;
 }
 
 /**
@@ -65,48 +42,39 @@ export function getRelationship<T = any>(
 }
 
 /**
- * Search for manga with given parameters
+ * Search for manga (Mocked)
  */
 export async function searchManga(params: SearchParams): Promise<MangaList> {
-  const query = new URLSearchParams();
-
-  if (params.title) query.append('title', params.title);
-  if (params.limit) query.append('limit', params.limit.toString());
-  if (params.offset) query.append('offset', params.offset.toString());
-
-  params.status?.forEach((s) => query.append('status[]', s));
-  params.contentRating?.forEach((cr) => query.append('contentRating[]', cr));
-  params.includedTags?.forEach((t) => query.append('includedTags[]', t));
-  params.excludedTags?.forEach((t) => query.append('excludedTags[]', t));
-
-  const includes = params.includes || ['cover_art', 'author', 'artist'];
-  includes.forEach((inc) => query.append('includes[]', inc));
-
-  if (params.order) {
-    Object.entries(params.order).forEach(([key, value]) => {
-      query.append(`order[${key}]`, value);
-    });
+  let data = MOCK_MANGA;
+  if (params.title) {
+    data = data.filter(m =>
+      getLocalizedString(m.attributes.title).toLowerCase().includes(params.title!.toLowerCase())
+    );
   }
-
-  return fetchMangaDex<MangaList>(`/manga?${query.toString()}`, {
-    next: { revalidate: 3600 },
-  });
+  return {
+    result: 'ok',
+    response: 'collection',
+    data: data,
+    limit: params.limit || 10,
+    offset: params.offset || 0,
+    total: data.length
+  };
 }
 
 /**
- * Get a single manga by its ID
+ * Get a single manga by its ID (Mocked)
  */
 export async function getMangaById(id: string): Promise<MangaResponse> {
-  const query = new URLSearchParams();
-  ['cover_art', 'author', 'artist'].forEach((inc) => query.append('includes[]', inc));
-
-  return fetchMangaDex<MangaResponse>(`/manga/${id}?${query.toString()}`, {
-    next: { revalidate: 3600 },
-  });
+  const manga = MOCK_MANGA.find(m => m.id === id) || MOCK_MANGA[0];
+  return {
+    result: 'ok',
+    response: 'entity',
+    data: manga
+  };
 }
 
 /**
- * Get chapters for a specific manga
+ * Get chapters for a specific manga (Mocked)
  */
 export async function getMangaChapters(
   mangaId: string,
@@ -114,55 +82,49 @@ export async function getMangaChapters(
   offset: number = 0,
   translatedLanguage: string = 'en'
 ): Promise<ChapterList> {
-  const query = new URLSearchParams();
-  query.append('manga', mangaId);
-  query.append('translatedLanguage[]', translatedLanguage);
-  query.append('limit', limit.toString());
-  query.append('offset', offset.toString());
-  query.append('order[chapter]', 'desc');
-  query.append('includes[]', 'scanlation_group');
-
-  return fetchMangaDex<ChapterList>(`/chapter?${query.toString()}`, {
-    next: { revalidate: 1800 },
-  });
+  const chapters = MOCK_CHAPTERS[mangaId] || [];
+  return {
+    result: 'ok',
+    response: 'collection',
+    data: chapters,
+    limit,
+    offset,
+    total: chapters.length
+  };
 }
 
 /**
- * Get chapter pages via MangaDex At-Home
+ * Get chapter pages (Mocked)
  */
 export async function getChapterPages(chapterId: string): Promise<AtHomeServer> {
-  return fetchMangaDex<AtHomeServer>(`/at-home/server/${chapterId}`, {
-    next: { revalidate: 3600 },
-  });
+  return MOCK_PAGES[chapterId] || MOCK_PAGES['c1'];
 }
 
 /**
- * Get the full URL for a manga cover image
+ * Get the full URL for a manga cover image (Mocked - returning placeholder or static image)
  */
 export function getCoverImageUrl(mangaId: string, filename: string, size: 'small' | 'medium' = 'small'): string {
-  if (!filename) return '/placeholder.svg';
-  const suffix = size === 'small' ? '.256.jpg' : '.512.jpg';
-  return `https://uploads.mangadex.org/covers/${mangaId}/${filename}${suffix}`;
+  // For UI only, we can use unsplash or placeholder
+  return `https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=400&auto=format&fit=crop`;
 }
 
 /**
- * Get the full URL for a chapter page image
+ * Get the full URL for a chapter page image (Mocked)
  */
 export function getChapterPageUrl(baseUrl: string, hash: string, fileName: string): string {
-  return `${baseUrl}/data/${hash}/${fileName}`;
+  return `https://images.unsplash.com/photo-1618336753974-aae8e04506aa?q=80&w=800&auto=format&fit=crop`;
 }
 
 /**
- * Get a single chapter by its ID
+ * Get a single chapter by its ID (Mocked)
  */
 export async function getChapterById(id: string): Promise<{ result: string, data: Chapter }> {
-  const query = new URLSearchParams();
-  query.append('includes[]', 'manga');
-  query.append('includes[]', 'scanlation_group');
-
-  return fetchMangaDex<{ result: string, data: Chapter }>(`/chapter/${id}?${query.toString()}`, {
-    next: { revalidate: 3600 },
-  });
+  const allChapters = Object.values(MOCK_CHAPTERS).flat();
+  const chapter = allChapters.find(c => c.id === id) || allChapters[0];
+  return {
+    result: 'ok',
+    data: chapter
+  };
 }
 
 /**
