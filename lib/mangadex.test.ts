@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { deduplicateChapters } from './mangadex';
 import { Chapter } from './types';
 

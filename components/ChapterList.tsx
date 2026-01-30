@@ -14,6 +14,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/context/UserContext';
 
 interface ChapterListProps {
   chapters: Chapter[];
@@ -21,6 +22,7 @@ interface ChapterListProps {
 }
 
 export function ChapterList({ chapters, mangaId }: ChapterListProps) {
+  const { history } = useUser();
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [expandedVolumes, setExpandedVolumes] = useState<Record<string, boolean>>({});
 
@@ -95,6 +97,7 @@ export function ChapterList({ chapters, mangaId }: ChapterListProps) {
                 const title = chapter.attributes.title;
                 const publishDate = new Date(chapter.attributes.publishAt);
                 const relativeDate = formatDistanceToNow(publishDate, { addSuffix: true });
+                const isRead = history.some(h => h.chapterId === chapter.id);
 
                 return (
                   <Link
@@ -102,14 +105,28 @@ export function ChapterList({ chapters, mangaId }: ChapterListProps) {
                     href={`/manga/${mangaId}/chapter/${chapter.id}`}
                     className="group"
                   >
-                    <div className="flex items-center justify-between rounded-md border border-border p-4 transition-all hover:border-primary/50 hover:bg-muted/50">
+                    <div className={cn(
+                      "flex items-center justify-between rounded-md border p-4 transition-all hover:border-primary/50 hover:bg-muted/50",
+                      isRead ? "bg-muted/30 border-border/50" : "border-border"
+                    )}>
                       <div className="flex flex-1 items-center gap-4 min-w-0">
-                        <div className="flex h-8 w-12 shrink-0 items-center justify-center rounded bg-muted text-xs font-bold text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary">
+                        <div className={cn(
+                          "flex h-8 w-12 shrink-0 items-center justify-center rounded text-xs font-bold transition-colors",
+                          isRead
+                            ? "bg-primary/20 text-primary"
+                            : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
+                        )}>
                           {chapterNumber || 'Sp'}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-medium text-foreground truncate">
+                          <h3 className={cn(
+                            "font-medium truncate transition-colors",
+                            isRead ? "text-muted-foreground" : "text-foreground"
+                          )}>
                             {title || `Chapter ${chapterNumber}`}
+                            {isRead && (
+                              <span className="ml-2 text-[10px] font-black uppercase tracking-widest text-primary/70">Read</span>
+                            )}
                           </h3>
                           <p className="text-xs text-muted-foreground">
                             {relativeDate} • {chapter.attributes.pages} pages

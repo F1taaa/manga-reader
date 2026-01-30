@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Database,
   Mail,
-  Smartphone
+  Smartphone,
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
 

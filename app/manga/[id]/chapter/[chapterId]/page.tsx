@@ -1,4 +1,4 @@
-import { getChapterPages, getMangaById, getLocalizedString } from '@/lib/mangadex';
+import { getChapterPages, getLocalizedString, getChapterById, getMangaChapters, deduplicateChapters } from '@/lib/mangadex';
 import { Reader } from '@/components/Reader';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
@@ -29,18 +29,31 @@ export default async function ChapterReaderPage({
   const { id, chapterId } = await params;
 
   try {
-    const [pagesResponse, mangaResponse] = await Promise.all([
+    const [pagesResponse, chapterResponse, chaptersResponse] = await Promise.all([
       getChapterPages(chapterId),
-      getMangaById(id)
+      getChapterById(chapterId),
+      getMangaChapters(id, 100)
     ]);
 
-    if (pagesResponse.result !== 'ok' || mangaResponse.result !== 'ok') {
+    if (pagesResponse.result !== 'ok' || chapterResponse.result !== 'ok') {
       notFound();
     }
 
+    const chapter = chapterResponse.data;
     const { baseUrl, chapter: chapterData } = pagesResponse;
     const pages = chapterData.data;
-    const mangaTitle = getLocalizedString(mangaResponse.data.attributes.title);
+
+    const mangaRelationship = chapter.relationships.find(r => r.type === 'manga');
+    const mangaTitle = getLocalizedString(mangaRelationship?.attributes?.title);
+
+    // Navigation logic
+    const allChapters = chaptersResponse.result === 'ok' ? chaptersResponse.data : [];
+    const chapters = deduplicateChapters(allChapters);
+    const currentIndex = chapters.findIndex(c => c.id === chapterId);
+
+    // Sort is descending, so next chapter is earlier in array
+    const nextChapterId = currentIndex > 0 ? chapters[currentIndex - 1].id : undefined;
+    const prevChapterId = currentIndex < chapters.length - 1 ? chapters[currentIndex + 1].id : undefined;
 
     if (!pages || pages.length === 0) {
       notFound();
@@ -71,7 +84,18 @@ export default async function ChapterReaderPage({
 
         {/* Reader Component */}
         <main className="flex-1 flex flex-col">
-          <Reader baseUrl={baseUrl} hash={chapterData.hash} pages={pages} mangaId={''} mangaTitle={''} chapterId={''} chapterNumber={''} volumeNumber={null} />
+          <Reader
+            baseUrl={baseUrl}
+            hash={chapterData.hash}
+            pages={pages}
+            mangaId={id}
+            mangaTitle={mangaTitle}
+            chapterId={chapterId}
+            chapterNumber={chapter.attributes.chapter || '0'}
+            volumeNumber={chapter.attributes.volume}
+            nextChapterId={nextChapterId}
+            prevChapterId={prevChapterId}
+          />
         </main>
       </div>
     );
