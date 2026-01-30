@@ -53,19 +53,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [data, mounted]);
 
   const login = (username: string, email: string) => {
-    setData((prev) => ({ ...prev, user: { username, email } }));
+    setData((prev: UserData) => ({ ...prev, user: { username, email } }));
   };
 
   const signup = (username: string, email: string) => {
-    setData((prev) => ({ ...prev, user: { username, email } }));
+    setData((prev: UserData) => ({ ...prev, user: { username, email } }));
   };
 
   const logout = () => {
-    setData((prev) => ({ ...prev, user: null }));
+    setData((prev: UserData) => ({ ...prev, user: null }));
   };
 
   const addToLibrary = (item: Omit<LibraryItem, 'addedAt'>) => {
-    setData((prev) => ({
+    setData((prev: UserData) => ({
       ...prev,
       library: {
         ...prev.library,
@@ -78,7 +78,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromLibrary = (mangaId: string) => {
-    setData((prev) => {
+    setData((prev: UserData) => {
       const newLibrary = { ...prev.library };
       delete newLibrary[mangaId];
       return { ...prev, library: newLibrary };
@@ -86,7 +86,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateLibraryStatus = (mangaId: string, status: ReadingStatus) => {
-    setData((prev) => {
+    setData((prev: UserData) => {
       if (!prev.library[mangaId]) return prev;
       return {
         ...prev,
@@ -102,10 +102,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const addToHistory = (item: Omit<HistoryItem, 'timestamp'>) => {
-    setData((prev) => {
+    setData((prev: UserData) => {
       // Remove existing entry for this manga+chapter if it exists to move it to top
       const filteredHistory = prev.history.filter(
-        (h) => !(h.mangaId === item.mangaId && h.chapterId === item.chapterId)
+        (h: HistoryItem) => !(h.mangaId === item.mangaId && h.chapterId === item.chapterId)
       );
 
       const newHistory = [
@@ -128,14 +128,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeFromHistory = (chapterId: string) => {
-    setData((prev) => ({
+    setData((prev: UserData) => ({
       ...prev,
-      history: prev.history.filter((h) => h.chapterId !== chapterId),
+      history: prev.history.filter((h: HistoryItem) => h.chapterId !== chapterId),
     }));
   };
 
   const clearHistory = () => {
-    setData((prev) => ({ ...prev, history: [] }));
+    setData((prev: UserData) => ({ ...prev, history: [] }));
   };
 
   const exportData = () => {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import { getChapterPageUrl } from '@/lib/mangadex';
@@ -34,15 +35,21 @@ export function Reader({
 }: ReaderProps) {
   const [page, setPage] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   const pageUrl = getChapterPageUrl(baseUrl, hash, pages[page]);
 
   // Load last page if returning to this chapter
   useEffect(() => {
-    onPageChange?.(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [page, onPageChange]);
+  }, [page]);
+
+  // Reset loading state when page changes
+  useEffect(() => {
+    setLoading(true);
+  }, [page]);
 
   const goToPrevious = () => {
     if (page > 0) {

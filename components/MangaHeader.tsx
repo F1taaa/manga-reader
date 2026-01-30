@@ -1,12 +1,16 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import type { Manga } from '@/lib/types';
-import { getCoverImageUrl, getLocalizedString, getRelationship } from '@/lib/mangadex';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { BookOpen, Calendar, Share2, Heart } from 'lucide-react';
-import Link from 'next/link';
+import Image from "next/image";
+import type { Manga } from "@/lib/types";
+import {
+  getCoverImageUrl,
+  getLocalizedString,
+  getRelationship,
+} from "@/lib/mangadex";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Calendar, Share2, Heart } from "lucide-react";
+import Link from "next/link";
 
 interface MangaHeaderProps {
   manga: Manga;
@@ -14,18 +18,18 @@ interface MangaHeaderProps {
 }
 
 export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
-  const coverArt = getRelationship(manga, 'cover_art');
-  const author = getRelationship(manga, 'author');
+  const coverArt = getRelationship(manga, "cover_art");
+  const author = getRelationship(manga, "author");
 
   const coverFileName = coverArt?.attributes?.fileName;
   const coverUrl = coverFileName
     ? getCoverImageUrl(manga.id, coverFileName)
-    : '/placeholder.svg?height=600&width=400';
+    : "/placeholder.svg?height=600&width=400";
 
   const title = getLocalizedString(manga.attributes.title);
   const status = manga.attributes.status;
   const year = manga.attributes.year;
-  const authorName = author?.attributes?.name || 'Unknown Author';
+  const authorName = author?.attributes?.name || "Unknown Author";
 
   return (
     <div className="relative w-full border-b border-border bg-background py-8 lg:py-12">
@@ -67,9 +71,7 @@ export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
               {title}
             </h1>
 
-            <p className="text-lg text-muted-foreground">
-              {authorName}
-            </p>
+            <p className="text-lg text-muted-foreground">{authorName}</p>
 
             <div className="flex flex-wrap items-center justify-center gap-3 pt-4 md:justify-start">
               {firstChapterId ? (
@@ -89,7 +91,7 @@ export function MangaHeader({ manga, firstChapterId }: MangaHeaderProps) {
                 <Heart className="mr-2 h-5 w-5" />
                 Add to Library
               </Button>
-              <Button size="lg" variant="ghost" size="icon">
+              <Button size="icon" variant="ghost">
                 <Share2 className="h-5 w-5" />
               </Button>
             </div>

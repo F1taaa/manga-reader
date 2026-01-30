@@ -30,7 +30,7 @@ export function HeroCarousel({ mangaList }: HeroCarouselProps) {
     <Carousel
       className="w-full"
       opts={{ loop: true }}
-      plugins={[plugin.current]}
+      plugins={[plugin.current as any]}
     >
       <CarouselContent>
         {mangaList.map((manga) => {
@@ -38,7 +38,7 @@ export function HeroCarousel({ mangaList }: HeroCarouselProps) {
           const description = getLocalizedString(manga.attributes.description);
           const coverArt = getRelationship(manga, 'cover_art');
           const coverUrl = coverArt?.attributes?.fileName
-            ? getCoverImageUrl(manga.id, coverArt.attributes.fileName, 'original')
+            ? getCoverImageUrl(manga.id, coverArt.attributes.fileName)
             : '/placeholder.svg';
 
           return (
@@ -56,8 +56,8 @@ export function HeroCarousel({ mangaList }: HeroCarouselProps) {
                 </div>
 
                 {/* Main Content Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-transparent hidden md:block" />
+                <div className="absolute inset-0 bg-linear-to-t from-background via-background/60 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-r from-background/80 via-transparent to-transparent hidden md:block" />
 
                 <div className="container mx-auto h-full px-4 relative flex items-center">
                   <div className="grid md:grid-cols-12 gap-8 items-center w-full">
@@ -68,7 +68,7 @@ export function HeroCarousel({ mangaList }: HeroCarouselProps) {
                       transition={{ duration: 0.8 }}
                       className="hidden md:block md:col-span-4 lg:col-span-3"
                     >
-                      <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.02] transition-transform duration-700">
+                      <div className="relative aspect-2/3 rounded-2xl overflow-hidden shadow-2xl border border-white/10 group-hover:scale-[1.02] transition-transform duration-700">
                         <Image
                           src={coverUrl}
                           alt={title}

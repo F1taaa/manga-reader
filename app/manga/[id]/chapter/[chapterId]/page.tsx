@@ -71,7 +71,7 @@ export default async function ChapterReaderPage({
 
         {/* Reader Component */}
         <main className="flex-1 flex flex-col">
-          <Reader baseUrl={baseUrl} hash={chapterData.hash} pages={pages} />
+          <Reader baseUrl={baseUrl} hash={chapterData.hash} pages={pages} mangaId={''} mangaTitle={''} chapterId={''} chapterNumber={''} volumeNumber={null} />
         </main>
       </div>
     );

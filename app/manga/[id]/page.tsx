@@ -32,6 +32,19 @@ export async function generateMetadata({ params }: MangaPageProps) {
   };
 }
 
+// Helper function to deduplicate chapters
+function deduplicateChapters(chapters: any[]) {
+  const seen = new Map();
+  return chapters.filter(chapter => {
+    const key = `${chapter.attributes.chapter}-${chapter.attributes.translatedLanguage}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.set(key, true);
+    return true;
+  });
+}
+
 export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
 
@@ -50,18 +63,6 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
     // Filter and deduplicate
     const chapters = deduplicateChapters(allChapters);
-
-    // Find the first chapter (lowest number) that has pages
-    const firstChapter = [...chapters]
-      .filter(ch => (ch.attributes.pages || 0) > 0)
-      .sort((a, b) => {
-        const numA = parseFloat(a.attributes.chapter || '0');
-        const numB = parseFloat(b.attributes.chapter || '0');
-        return numA - numB;
-      })[0];
-
-    const description = getLocalizedString(manga.attributes.description);
-    const tags = manga.attributes.tags ?? [];
 
     // Find the first chapter (lowest number) that is NOT external
     const firstChapter = [...chapters]

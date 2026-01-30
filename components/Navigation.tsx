@@ -65,11 +65,9 @@ export function Navigation() {
       <div className="container mx-auto max-w-7xl px-4 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="p-2 rounded-xl bg-primary text-primary-foreground shadow-lg group-hover:scale-110 transition-transform">
-            <BookMarked className="h-5 w-5" />
-          </div>
+        
           <span className="font-extrabold text-xl tracking-tighter hidden sm:inline-block bg-linear-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            MANGA<span className="text-primary">HUB</span>
+           THEO<span className="text-primary">SCANS</span>
           </span>
         </Link>
 
